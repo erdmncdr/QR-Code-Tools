@@ -1,5 +1,7 @@
 QR Code Generator & Reader Tool
+
 QR kod oluşturma ve okuma işlemlerini gerçekleştirebilen web tabanlı araç. İngilizce/Türkçe dil desteği sunar.
+
 Özellikler:
 
 QR kod oluşturma (metin/URL)
