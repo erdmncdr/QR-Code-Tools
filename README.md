@@ -6,6 +6,8 @@ QR kod oluşturma ve okuma işlemlerini gerçekleştirebilen web tabanlı araç.
 
 - QR kod oluşturma (metin/URL)
 
+- Oluşturulan QR kodu kolaylıkla indirme
+
 - QR kod okuma (dosya yükleme)
 
 - Kamera ile QR okuma
