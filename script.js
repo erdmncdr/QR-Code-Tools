@@ -11,6 +11,7 @@ const qrLink = document.getElementById('qr-link');
 const cameraBtn = document.getElementById('camera-btn');
 const cameraPreview = document.getElementById('camera-preview');
 const languageSwitch = document.getElementById('language-switch');
+const downloadBtn = document.getElementById('download-btn');
 let activeStream = null;
 let scanning = false;
 let lastResult = null;
@@ -31,6 +32,7 @@ function setLanguage(language) {
         document.getElementById('camera-btn').textContent = 'Scan QR Code with Camera';
         document.getElementById('result-label').textContent = 'Result: ';
         qrLink.textContent = 'Go to Link';
+        downloadBtn.textContent = 'Download QR Code';
     } else if (language === 'tr') {
         document.getElementById('title').textContent = 'QR Kod Aracı';
         document.getElementById('tab-generator').textContent = 'QR Kod Oluşturucu';
@@ -41,6 +43,7 @@ function setLanguage(language) {
         document.getElementById('camera-btn').textContent = 'Kamera ile QR Oku';
         document.getElementById('result-label').textContent = 'Sonuç: ';
         qrLink.textContent = 'Linke Git';
+        downloadBtn.textContent = 'QR Kodu İndir';
     }
 
     if (savedResult !== 'No result yet' && savedResult !== 'Henüz sonuç yok') {
@@ -80,7 +83,18 @@ generateBtn.addEventListener('click', () => {
     }
     QRCode.toCanvas(qrCanvas, text, { width: 300 }, (error) => {
         if (error) console.error(error);
+        else {
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.textContent = languageSwitch.value === 'tr' ? 'QR Kodu İndir' : 'Download QR Code';
+        }
     });
+});
+
+downloadBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'qr-code.png';
+    link.href = qrCanvas.toDataURL('image/png');
+    link.click();
 });
 
 fileInput.addEventListener('change', (event) => {
@@ -183,4 +197,8 @@ cameraBtn.addEventListener('click', () => {
     } else {
         stopCamera();
     }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    setLanguage('en');
 });
