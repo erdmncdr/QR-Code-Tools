@@ -96,13 +96,13 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: var(--spacing-md);
     position: relative;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 /* Animated Background Gradient */
@@ -189,6 +189,8 @@ body::before {
 .container {
     width: 100%;
     max-width: 900px;
+    height: calc(100vh - 3rem);
+    max-height: 900px;
     background: var(--glass-bg);
     backdrop-filter: blur(var(--blur));
     -webkit-backdrop-filter: blur(var(--blur));
@@ -199,6 +201,9 @@ body::before {
     position: relative;
     z-index: 1;
     animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 @keyframes slideIn {
@@ -221,6 +226,7 @@ body::before {
     align-items: center;
     margin-bottom: var(--spacing-lg);
     gap: var(--spacing-md);
+    flex-shrink: 0;
 }
 
 .logo {
@@ -293,6 +299,7 @@ body::before {
     border-radius: var(--radius-lg);
     margin-bottom: var(--spacing-lg);
     border: 1px solid var(--glass-border);
+    flex-shrink: 0;
 }
 
 .tab {
@@ -336,11 +343,34 @@ body::before {
    Content Sections
    =========================== */
 .content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
     animation: fadeIn 0.4s ease-in-out;
+    padding-right: var(--spacing-xs);
 }
 
 .content.hidden {
     display: none;
+}
+
+/* Custom Scrollbar */
+.content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+    background: var(--bg-glass);
+    border-radius: var(--radius-sm);
+}
+
+.content::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: var(--radius-sm);
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
 }
 
 @keyframes fadeIn {
@@ -735,6 +765,7 @@ textarea.input {
     text-align: center;
     padding-top: var(--spacing-md);
     border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .footer p {
@@ -836,13 +867,20 @@ textarea.input {
    Responsive Design
    =========================== */
 @media (max-width: 768px) {
+    body {
+        padding: var(--spacing-sm);
+    }
+
     .container {
         padding: var(--spacing-md);
+        height: calc(100vh - 1rem);
+        max-height: none;
     }
 
     .header {
         flex-direction: column;
         text-align: center;
+        margin-bottom: var(--spacing-md);
     }
 
     .logo {
@@ -855,6 +893,7 @@ textarea.input {
 
     .tabs {
         flex-direction: column;
+        margin-bottom: var(--spacing-md);
     }
 
     .tab {
@@ -878,12 +917,13 @@ textarea.input {
 
 @media (max-width: 480px) {
     body {
-        padding: var(--spacing-sm);
+        padding: 0.5rem;
     }
 
     .container {
         padding: var(--spacing-sm);
         border-radius: var(--radius-lg);
+        height: calc(100vh - 1rem);
     }
 
     .card {
@@ -892,6 +932,11 @@ textarea.input {
 
     .toast {
         min-width: 250px;
+    }
+
+    .footer {
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-sm);
     }
 }
 
