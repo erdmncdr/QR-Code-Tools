@@ -1,204 +1,625 @@
-const tabGenerator = document.getElementById('tab-generator');
-const tabReader = document.getElementById('tab-reader');
-const generatorContent = document.getElementById('generator-content');
-const readerContent = document.getElementById('reader-content');
-const qrInput = document.getElementById('qr-input');
-const generateBtn = document.getElementById('generate-btn');
-const qrCanvas = document.getElementById('qr-canvas');
-const fileInput = document.getElementById('file-input');
-const qrResult = document.getElementById('qr-result');
-const qrLink = document.getElementById('qr-link');
-const cameraBtn = document.getElementById('camera-btn');
-const cameraPreview = document.getElementById('camera-preview');
-const languageSwitch = document.getElementById('language-switch');
-const downloadBtn = document.getElementById('download-btn');
-let activeStream = null;
-let scanning = false;
-let lastResult = null;
+// ===========================
+// Modern JavaScript for QR Code Studio
+// ===========================
 
-function setLanguage(language) {
-    stopCamera();
-    const savedResult = qrResult.textContent;
-    const savedLink = qrLink.href;
-    const wasLinkVisible = qrLink.style.display === 'inline-block';
+'use strict';
 
-    if (language === 'en') {
-        document.getElementById('title').textContent = 'QR Code Tool';
-        document.getElementById('tab-generator').textContent = 'QR Code Generator';
-        document.getElementById('tab-reader').textContent = 'QR Code Reader';
-        document.getElementById('generate-label').textContent = 'Text or URL to Generate';
-        document.getElementById('generate-btn').textContent = 'Generate QR Code';
-        document.getElementById('reader-label').textContent = 'Upload QR Code Image';
-        document.getElementById('camera-btn').textContent = 'Scan QR Code with Camera';
-        document.getElementById('result-label').textContent = 'Result: ';
-        qrLink.textContent = 'Go to Link';
-        downloadBtn.textContent = 'Download QR Code';
-    } else if (language === 'tr') {
-        document.getElementById('title').textContent = 'QR Kod Aracı';
-        document.getElementById('tab-generator').textContent = 'QR Kod Oluşturucu';
-        document.getElementById('tab-reader').textContent = 'QR Kod Okuyucu';
-        document.getElementById('generate-label').textContent = 'Oluşturulacak Metin veya URL';
-        document.getElementById('generate-btn').textContent = 'QR Kod Oluştur';
-        document.getElementById('reader-label').textContent = 'QR Kod Resmi Yükleyin';
-        document.getElementById('camera-btn').textContent = 'Kamera ile QR Oku';
-        document.getElementById('result-label').textContent = 'Sonuç: ';
-        qrLink.textContent = 'Linke Git';
-        downloadBtn.textContent = 'QR Kodu İndir';
+// ===========================
+// State Management
+// ===========================
+const state = {
+    currentLanguage: 'en',
+    currentTheme: 'light',
+    activeStream: null,
+    scanning: false,
+    lastResult: null
+};
+
+// ===========================
+// DOM Elements
+// ===========================
+const elements = {
+    // Theme
+    themeToggle: document.getElementById('theme-toggle'),
+
+    // Language
+    languageSwitch: document.getElementById('language-switch'),
+
+    // Tabs
+    tabGenerator: document.getElementById('tab-generator'),
+    tabReader: document.getElementById('tab-reader'),
+    generatorContent: document.getElementById('generator-content'),
+    readerContent: document.getElementById('reader-content'),
+
+    // Generator
+    qrInput: document.getElementById('qr-input'),
+    qrSize: document.getElementById('qr-size'),
+    qrColor: document.getElementById('qr-color'),
+    generateBtn: document.getElementById('generate-btn'),
+    qrCanvas: document.getElementById('qr-canvas'),
+    qrPreview: document.getElementById('qr-preview'),
+    downloadBtn: document.getElementById('download-btn'),
+    copyBtn: document.getElementById('copy-btn'),
+
+    // Reader
+    fileInput: document.getElementById('file-input'),
+    uploadArea: document.getElementById('upload-area'),
+    cameraBtn: document.getElementById('camera-btn'),
+    cameraContainer: document.getElementById('camera-container'),
+    cameraPreview: document.getElementById('camera-preview'),
+    closeCameraBtn: document.getElementById('close-camera'),
+    resultCard: document.getElementById('result-card'),
+    qrResult: document.getElementById('qr-result'),
+    qrLink: document.getElementById('qr-link'),
+    copyResultBtn: document.getElementById('copy-result-btn'),
+
+    // Toast
+    toastContainer: document.getElementById('toast-container')
+};
+
+// ===========================
+// Translations
+// ===========================
+const translations = {
+    en: {
+        title: 'QR Code Studio',
+        subtitle: 'Create & Scan with Style',
+        tabGenerator: 'QR Generator',
+        tabReader: 'QR Scanner',
+        generateLabel: 'Text or URL to Generate',
+        generateBtn: 'Generate QR Code',
+        uploadLabel: 'Click to upload or drag & drop',
+        cameraBtnText: 'Scan with Camera',
+        cameraBtnStop: 'Stop Camera',
+        orText: 'or',
+        resultLabel: 'Scan Result',
+        downloadBtn: 'Download',
+        copyBtn: 'Copy Image',
+        copyText: 'Copy Text',
+        openLink: 'Open Link',
+        footerText: 'Made with modern web technologies',
+        // Notifications
+        enterText: 'Please enter text or URL!',
+        qrGenerated: 'QR Code generated successfully!',
+        qrDownloaded: 'QR Code downloaded!',
+        imageCopied: 'Image copied to clipboard!',
+        textCopied: 'Text copied to clipboard!',
+        selectFile: 'Please select a file.',
+        noQRFound: 'No QR code detected.',
+        qrDetected: 'QR Code detected!',
+        cameraError: 'Unable to access camera. Please check your permissions.',
+        copyError: 'Failed to copy to clipboard.',
+        fileTooLarge: 'File is too large. Please select a file under 10MB.',
+        invalidFileType: 'Invalid file type. Please select an image file.',
+        themeSwitched: 'Theme switched to',
+        light: 'light',
+        dark: 'dark'
+    },
+    tr: {
+        title: 'QR Kod Studio',
+        subtitle: 'Stil ile Oluştur & Tara',
+        tabGenerator: 'QR Oluşturucu',
+        tabReader: 'QR Tarayıcı',
+        generateLabel: 'Oluşturulacak Metin veya URL',
+        generateBtn: 'QR Kod Oluştur',
+        uploadLabel: 'Yüklemek için tıklayın veya sürükleyin',
+        cameraBtnText: 'Kamera ile Tara',
+        cameraBtnStop: 'Kamerayı Durdur',
+        orText: 'veya',
+        resultLabel: 'Tarama Sonucu',
+        downloadBtn: 'İndir',
+        copyBtn: 'Resmi Kopyala',
+        copyText: 'Metni Kopyala',
+        openLink: 'Linki Aç',
+        footerText: 'Modern web teknolojileri ile yapılmıştır',
+        // Bildirimler
+        enterText: 'Lütfen metin veya URL girin!',
+        qrGenerated: 'QR Kod başarıyla oluşturuldu!',
+        qrDownloaded: 'QR Kod indirildi!',
+        imageCopied: 'Resim panoya kopyalandı!',
+        textCopied: 'Metin panoya kopyalandı!',
+        selectFile: 'Lütfen bir dosya seçin.',
+        noQRFound: 'QR kod bulunamadı.',
+        qrDetected: 'QR Kod algılandı!',
+        cameraError: 'Kameraya erişilemiyor. Lütfen izinleri kontrol edin.',
+        copyError: 'Panoya kopyalanamadı.',
+        fileTooLarge: 'Dosya çok büyük. Lütfen 10MB\'dan küçük bir dosya seçin.',
+        invalidFileType: 'Geçersiz dosya türü. Lütfen bir resim dosyası seçin.',
+        themeSwitched: 'Tema değiştirildi:',
+        light: 'açık',
+        dark: 'koyu'
     }
+};
 
-    if (savedResult !== 'No result yet' && savedResult !== 'Henüz sonuç yok') {
-        qrResult.textContent = savedResult;
-        if (wasLinkVisible) {
-            qrLink.href = savedLink;
-            qrLink.style.display = 'inline-block';
+// ===========================
+// Toast Notification System
+// ===========================
+const toast = {
+    show(message, type = 'info', duration = 3000) {
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast toast-${type}`;
+
+        const icons = {
+            success: `<svg class="toast-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>`,
+            error: `<svg class="toast-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="15" y1="9" x2="9" y2="15"/>
+                      <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>`,
+            info: `<svg class="toast-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                     <circle cx="12" cy="12" r="10"/>
+                     <line x1="12" y1="16" x2="12" y2="12"/>
+                     <line x1="12" y1="8" x2="12.01" y2="8"/>
+                   </svg>`
+        };
+
+        toastEl.innerHTML = `
+            ${icons[type]}
+            <span class="toast-message">${message}</span>
+        `;
+
+        elements.toastContainer.appendChild(toastEl);
+
+        setTimeout(() => {
+            toastEl.classList.add('removing');
+            setTimeout(() => toastEl.remove(), 300);
+        }, duration);
+    }
+};
+
+// ===========================
+// Theme Management
+// ===========================
+const theme = {
+    init() {
+        // Check for saved theme preference or default to 'light'
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        this.set(savedTheme, false);
+    },
+
+    set(newTheme, showNotification = true) {
+        state.currentTheme = newTheme;
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+
+        if (showNotification) {
+            const lang = translations[state.currentLanguage];
+            toast.show(`${lang.themeSwitched} ${lang[newTheme]}`, 'info');
         }
-    } else {
-        qrResult.textContent = language === 'tr' ? 'Henüz sonuç yok' : 'No result yet';
-        qrLink.style.display = 'none';
+    },
+
+    toggle() {
+        const newTheme = state.currentTheme === 'light' ? 'dark' : 'light';
+        this.set(newTheme);
     }
-}
+};
 
-languageSwitch.addEventListener('change', (event) => setLanguage(event.target.value));
+// ===========================
+// Language Management
+// ===========================
+const language = {
+    set(lang) {
+        state.currentLanguage = lang;
+        this.updateUI();
+        localStorage.setItem('language', lang);
+    },
 
-tabGenerator.addEventListener('click', () => {
-    tabGenerator.classList.add('active');
-    tabReader.classList.remove('active');
-    generatorContent.classList.remove('hidden');
-    readerContent.classList.add('hidden');
-    stopCamera();
-});
+    updateUI() {
+        const t = translations[state.currentLanguage];
 
-tabReader.addEventListener('click', () => {
-    tabReader.classList.add('active');
-    tabGenerator.classList.remove('active');
-    readerContent.classList.remove('hidden');
-    generatorContent.classList.add('hidden');
-});
+        // Update text content
+        document.getElementById('title').textContent = t.title;
+        document.getElementById('subtitle').textContent = t.subtitle;
+        document.querySelector('#tab-generator span').textContent = t.tabGenerator;
+        document.querySelector('#tab-reader span').textContent = t.tabReader;
+        document.getElementById('generate-label').innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 7h16M4 12h16M4 17h10"/>
+            </svg>
+            ${t.generateLabel}
+        `;
+        document.querySelector('#generate-btn span') ?
+            document.querySelector('#generate-btn span').textContent = t.generateBtn : null;
+        document.getElementById('upload-label-text').textContent = t.uploadLabel;
+        document.querySelector('#camera-btn span').textContent = t.cameraBtnText;
+        document.getElementById('or-text').textContent = t.orText;
+        document.getElementById('result-label').textContent = t.resultLabel;
+        document.getElementById('footer-text').textContent = t.footerText;
 
-generateBtn.addEventListener('click', () => {
-    const text = qrInput.value;
-    if (!text) {
-        alert(languageSwitch.value === 'tr' ? 'Lütfen metin veya URL girin!' : 'Please enter text or URL!');
-        return;
+        // Update button texts if they exist
+        if (elements.downloadBtn) elements.downloadBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            ${t.downloadBtn}
+        `;
+
+        if (elements.copyBtn) elements.copyBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            ${t.copyBtn}
+        `;
+
+        if (elements.copyResultBtn) elements.copyResultBtn.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            ${t.copyText}
+        `;
+
+        if (elements.qrLink) elements.qrLink.innerHTML = `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            ${t.openLink}
+        `;
     }
-    QRCode.toCanvas(qrCanvas, text, { width: 300 }, (error) => {
-        if (error) console.error(error);
-        else {
-            downloadBtn.classList.remove('hidden');
-            downloadBtn.textContent = languageSwitch.value === 'tr' ? 'QR Kodu İndir' : 'Download QR Code';
+};
+
+// ===========================
+// Tab Management
+// ===========================
+const tabs = {
+    switchTo(tab) {
+        if (tab === 'generator') {
+            elements.tabGenerator.classList.add('active');
+            elements.tabReader.classList.remove('active');
+            elements.tabGenerator.setAttribute('aria-selected', 'true');
+            elements.tabReader.setAttribute('aria-selected', 'false');
+            elements.generatorContent.classList.remove('hidden');
+            elements.readerContent.classList.add('hidden');
+            camera.stop();
+        } else if (tab === 'reader') {
+            elements.tabReader.classList.add('active');
+            elements.tabGenerator.classList.remove('active');
+            elements.tabReader.setAttribute('aria-selected', 'true');
+            elements.tabGenerator.setAttribute('aria-selected', 'false');
+            elements.readerContent.classList.remove('hidden');
+            elements.generatorContent.classList.add('hidden');
         }
-    });
-});
-
-downloadBtn.addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = 'qr-code.png';
-    link.href = qrCanvas.toDataURL('image/png');
-    link.click();
-});
-
-fileInput.addEventListener('change', (event) => {
-    stopCamera();
-    const file = event.target.files[0];
-    if (!file) {
-        qrResult.textContent = languageSwitch.value === 'tr' ? 'Lütfen bir dosya seçin.' : 'Please select a file.';
-        return;
     }
+};
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.src = e.target.result;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            context.drawImage(img, 0, 0, img.width, img.height);
+// ===========================
+// QR Code Generator
+// ===========================
+const generator = {
+    async generate() {
+        const text = elements.qrInput.value.trim();
+        const t = translations[state.currentLanguage];
+
+        if (!text) {
+            toast.show(t.enterText, 'error');
+            return;
+        }
+
+        try {
+            const size = parseInt(elements.qrSize.value);
+            const color = elements.qrColor.value;
+
+            await QRCode.toCanvas(elements.qrCanvas, text, {
+                width: size,
+                color: {
+                    dark: color,
+                    light: '#ffffff'
+                },
+                margin: 2,
+                errorCorrectionLevel: 'H'
+            });
+
+            elements.qrPreview.classList.remove('hidden');
+            toast.show(t.qrGenerated, 'success');
+        } catch (error) {
+            console.error('QR Generation Error:', error);
+            toast.show('Error generating QR code', 'error');
+        }
+    },
+
+    download() {
+        const t = translations[state.currentLanguage];
+        const link = document.createElement('a');
+        link.download = `qr-code-${Date.now()}.png`;
+        link.href = elements.qrCanvas.toDataURL('image/png');
+        link.click();
+        toast.show(t.qrDownloaded, 'success');
+    },
+
+    async copyImage() {
+        const t = translations[state.currentLanguage];
+        try {
+            const blob = await new Promise(resolve =>
+                elements.qrCanvas.toBlob(resolve, 'image/png')
+            );
+
+            if (navigator.clipboard && blob) {
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+                toast.show(t.imageCopied, 'success');
+            } else {
+                throw new Error('Clipboard API not supported');
+            }
+        } catch (error) {
+            console.error('Copy Error:', error);
+            toast.show(t.copyError, 'error');
+        }
+    }
+};
+
+// ===========================
+// QR Code Reader
+// ===========================
+const reader = {
+    async readFromFile(file) {
+        const t = translations[state.currentLanguage];
+
+        if (!file) {
+            toast.show(t.selectFile, 'error');
+            return;
+        }
+
+        // Check file size (10MB limit)
+        if (file.size > 10 * 1024 * 1024) {
+            toast.show(t.fileTooLarge, 'error');
+            return;
+        }
+
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+            toast.show(t.invalidFileType, 'error');
+            return;
+        }
+
+        try {
+            const imageData = await this.getImageData(file);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code) {
+                this.displayResult(code.data);
+                toast.show(t.qrDetected, 'success');
+            } else {
+                toast.show(t.noQRFound, 'error');
+            }
+        } catch (error) {
+            console.error('Read Error:', error);
+            toast.show('Error reading QR code', 'error');
+        }
+    },
+
+    getImageData(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0);
+                    resolve(context.getImageData(0, 0, canvas.width, canvas.height));
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    },
+
+    displayResult(data) {
+        state.lastResult = data;
+        elements.qrResult.textContent = data;
+        elements.resultCard.classList.remove('hidden');
+
+        // Check if it's a URL
+        if (data.startsWith('http://') || data.startsWith('https://')) {
+            elements.qrLink.href = data;
+            elements.qrLink.classList.remove('hidden');
+        } else {
+            elements.qrLink.classList.add('hidden');
+        }
+    },
+
+    async copyResult() {
+        const t = translations[state.currentLanguage];
+        try {
+            await navigator.clipboard.writeText(state.lastResult);
+            toast.show(t.textCopied, 'success');
+        } catch (error) {
+            console.error('Copy Error:', error);
+            toast.show(t.copyError, 'error');
+        }
+    }
+};
+
+// ===========================
+// Camera Management
+// ===========================
+const camera = {
+    async start() {
+        const t = translations[state.currentLanguage];
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' }
+            });
+
+            state.activeStream = stream;
+            elements.cameraPreview.srcObject = stream;
+            elements.cameraContainer.classList.remove('hidden');
+
+            await elements.cameraPreview.play();
+            state.scanning = true;
+            this.scan();
+
+            // Update button text
+            elements.cameraBtn.querySelector('span').textContent = t.cameraBtnStop;
+        } catch (error) {
+            console.error('Camera Error:', error);
+            toast.show(t.cameraError, 'error');
+        }
+    },
+
+    stop() {
+        if (state.activeStream) {
+            state.activeStream.getTracks().forEach(track => track.stop());
+            state.activeStream = null;
+        }
+
+        elements.cameraContainer.classList.add('hidden');
+        state.scanning = false;
+
+        const t = translations[state.currentLanguage];
+        elements.cameraBtn.querySelector('span').textContent = t.cameraBtnText;
+    },
+
+    scan() {
+        if (!state.scanning) return;
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        if (elements.cameraPreview.videoWidth && elements.cameraPreview.videoHeight) {
+            canvas.width = elements.cameraPreview.videoWidth;
+            canvas.height = elements.cameraPreview.videoHeight;
+            context.drawImage(elements.cameraPreview, 0, 0, canvas.width, canvas.height);
+
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             const code = jsQR(imageData.data, canvas.width, canvas.height);
 
             if (code) {
-                qrResult.textContent = code.data;
-                lastResult = code.data;
-                if (code.data.startsWith('http')) {
-                    qrLink.href = code.data;
-                    qrLink.style.display = 'inline-block';
-                } else {
-                    qrLink.style.display = 'none';
-                }
-            } else {
-                qrResult.textContent = languageSwitch.value === 'tr' ? 'QR kod bulunamadı.' : 'No QR code detected.';
-                qrLink.style.display = 'none';
+                reader.displayResult(code.data);
+                const t = translations[state.currentLanguage];
+                toast.show(t.qrDetected, 'success');
+                this.stop();
+                return;
             }
-        };
-    };
-    reader.readAsDataURL(file);
-});
+        }
 
-async function startCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        activeStream = stream;
-        cameraPreview.srcObject = stream;
-        cameraPreview.style.display = 'block';
-        await cameraPreview.play();
-        scanning = true;
-        scan();
-    } catch (error) {
-        alert(languageSwitch.value === 'tr' ? 
-            'Kameraya erişilemiyor. Lütfen izinleri kontrol edin.' : 
-            'Unable to access camera. Please check your permissions.');
-    }
-}
+        requestAnimationFrame(() => this.scan());
+    },
 
-function stopCamera() {
-    if (activeStream) {
-        activeStream.getTracks().forEach(track => track.stop());
-        activeStream = null;
-    }
-    cameraPreview.style.display = 'none';
-    scanning = false;
-}
-
-function scan() {
-    if (!scanning) return;
-
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    
-    if (cameraPreview.videoWidth && cameraPreview.videoHeight) {
-        canvas.width = cameraPreview.videoWidth;
-        canvas.height = cameraPreview.videoHeight;
-        context.drawImage(cameraPreview, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-        if (code) {
-            qrResult.textContent = code.data;
-            lastResult = code.data;
-            if (code.data.startsWith('http')) {
-                qrLink.href = code.data;
-                qrLink.style.display = 'inline-block';
-            } else {
-                qrLink.style.display = 'none';
-            }
-            stopCamera();
-            return;
+    toggle() {
+        if (elements.cameraContainer.classList.contains('hidden')) {
+            this.start();
+        } else {
+            this.stop();
         }
     }
-    
-    requestAnimationFrame(scan);
-}
+};
 
-cameraBtn.addEventListener('click', () => {
-    if (cameraPreview.style.display === 'none') {
-        startCamera();
-    } else {
-        stopCamera();
+// ===========================
+// Drag & Drop Support
+// ===========================
+const dragDrop = {
+    init() {
+        const uploadArea = elements.uploadArea;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.style.borderColor = 'var(--accent-primary)';
+                uploadArea.style.background = 'var(--bg-glass)';
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => {
+                uploadArea.style.borderColor = 'var(--border-color)';
+                uploadArea.style.background = 'var(--bg-hover)';
+            });
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                reader.readFromFile(file);
+            }
+        });
     }
-});
+};
 
-document.addEventListener('DOMContentLoaded', () => {
-    setLanguage('en');
-});
+// ===========================
+// Event Listeners
+// ===========================
+const events = {
+    init() {
+        // Theme toggle
+        elements.themeToggle.addEventListener('click', () => theme.toggle());
+
+        // Language switch
+        elements.languageSwitch.addEventListener('change', (e) => {
+            language.set(e.target.value);
+        });
+
+        // Tab switching
+        elements.tabGenerator.addEventListener('click', () => tabs.switchTo('generator'));
+        elements.tabReader.addEventListener('click', () => tabs.switchTo('reader'));
+
+        // Generator
+        elements.generateBtn.addEventListener('click', () => generator.generate());
+        elements.qrInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                generator.generate();
+            }
+        });
+        elements.downloadBtn.addEventListener('click', () => generator.download());
+        elements.copyBtn.addEventListener('click', () => generator.copyImage());
+
+        // Reader
+        elements.fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) reader.readFromFile(file);
+        });
+        elements.cameraBtn.addEventListener('click', () => camera.toggle());
+        elements.closeCameraBtn.addEventListener('click', () => camera.stop());
+        elements.copyResultBtn.addEventListener('click', () => reader.copyResult());
+
+        // Drag & Drop
+        dragDrop.init();
+    }
+};
+
+// ===========================
+// Initialization
+// ===========================
+const init = () => {
+    // Initialize theme
+    theme.init();
+
+    // Initialize language
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    elements.languageSwitch.value = savedLanguage;
+    language.set(savedLanguage);
+
+    // Initialize events
+    events.init();
+
+    console.log('🎨 QR Code Studio initialized successfully!');
+};
+
+// Start when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
