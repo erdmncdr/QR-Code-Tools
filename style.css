@@ -13,28 +13,28 @@
 :root {
     /* Light Theme Colors */
     --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --bg-secondary: rgba(255, 255, 255, 0.95);
-    --bg-card: rgba(255, 255, 255, 0.7);
-    --bg-glass: rgba(255, 255, 255, 0.1);
-    --bg-hover: rgba(255, 255, 255, 0.15);
+    --bg-secondary: rgba(255, 255, 255, 0.98);
+    --bg-card: rgba(255, 255, 255, 0.95);
+    --bg-glass: rgba(255, 255, 255, 0.25);
+    --bg-hover: rgba(255, 255, 255, 0.35);
 
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
     --text-accent: #ffffff;
 
     --accent-primary: #6366f1;
     --accent-secondary: #8b5cf6;
     --accent-hover: #4f46e5;
 
-    --border-color: rgba(255, 255, 255, 0.18);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.12);
-    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.15);
+    --border-color: rgba(255, 255, 255, 0.3);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.16);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.2);
 
     /* Glassmorphism */
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-bg: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.4);
     --blur: 20px;
 
     /* Spacing */
