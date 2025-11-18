@@ -10,6 +10,12 @@
 
     <title>QR Code Studio | Modern Tool</title>
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236366f1' width='100' height='100' rx='20'/><rect fill='white' x='15' y='15' width='20' height='20'/><rect fill='white' x='65' y='15' width='20' height='20'/><rect fill='white' x='15' y='65' width='20' height='20'/><rect fill='white' x='50' y='50' width='10' height='10'/><rect fill='white' x='70' y='50' width='10' height='10'/><rect fill='white' x='50' y='70' width='10' height='10'/><rect fill='white' x='70' y='70' width='10' height='10'/></svg>">
+
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,13 +95,115 @@
         <section class="content" id="generator-content" role="tabpanel" aria-labelledby="tab-generator">
             <div class="card">
                 <div class="form-group">
-                    <label for="qr-input" id="generate-label" class="label">
+                    <label for="qr-template" class="label">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 7h16M4 12h16M4 17h10"/>
+                            <path d="M4 7h16M10 11h10M4 15h16M4 19h10"/>
                         </svg>
-                        Text or URL to Generate
+                        <span id="template-label">Template</span>
                     </label>
-                    <textarea id="qr-input" class="input" placeholder="Enter text, URL, or any data..." rows="3"></textarea>
+                    <select id="qr-template" class="input">
+                        <option value="text">Text / URL</option>
+                        <option value="wifi">WiFi Network</option>
+                        <option value="email">Email</option>
+                        <option value="sms">SMS</option>
+                        <option value="tel">Phone Number</option>
+                        <option value="vcard">Contact (vCard)</option>
+                    </select>
+                </div>
+
+                <div id="template-fields">
+                    <!-- Text Template (Default) -->
+                    <div id="text-template" class="template-form">
+                        <div class="form-group">
+                            <label for="qr-input" id="generate-label" class="label">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 7h16M4 12h16M4 17h10"/>
+                                </svg>
+                                Text or URL to Generate
+                            </label>
+                            <textarea id="qr-input" class="input" placeholder="Enter text, URL, or any data..." rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- WiFi Template -->
+                    <div id="wifi-template" class="template-form hidden">
+                        <div class="form-group">
+                            <label for="wifi-ssid" class="label">Network Name (SSID)</label>
+                            <input type="text" id="wifi-ssid" class="input" placeholder="MyWiFi">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi-password" class="label">Password</label>
+                            <input type="text" id="wifi-password" class="input" placeholder="password123">
+                        </div>
+                        <div class="form-group">
+                            <label for="wifi-encryption" class="label">Security</label>
+                            <select id="wifi-encryption" class="input">
+                                <option value="WPA">WPA/WPA2</option>
+                                <option value="WEP">WEP</option>
+                                <option value="">None</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Email Template -->
+                    <div id="email-template" class="template-form hidden">
+                        <div class="form-group">
+                            <label for="email-address" class="label">Email Address</label>
+                            <input type="email" id="email-address" class="input" placeholder="example@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="email-subject" class="label">Subject (Optional)</label>
+                            <input type="text" id="email-subject" class="input" placeholder="Email subject">
+                        </div>
+                        <div class="form-group">
+                            <label for="email-body" class="label">Message (Optional)</label>
+                            <textarea id="email-body" class="input" placeholder="Email message..." rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- SMS Template -->
+                    <div id="sms-template" class="template-form hidden">
+                        <div class="form-group">
+                            <label for="sms-number" class="label">Phone Number</label>
+                            <input type="tel" id="sms-number" class="input" placeholder="+1234567890">
+                        </div>
+                        <div class="form-group">
+                            <label for="sms-message" class="label">Message (Optional)</label>
+                            <textarea id="sms-message" class="input" placeholder="SMS message..." rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Phone Template -->
+                    <div id="tel-template" class="template-form hidden">
+                        <div class="form-group">
+                            <label for="tel-number" class="label">Phone Number</label>
+                            <input type="tel" id="tel-number" class="input" placeholder="+1234567890">
+                        </div>
+                    </div>
+
+                    <!-- vCard Template -->
+                    <div id="vcard-template" class="template-form hidden">
+                        <div class="form-group">
+                            <label for="vcard-name" class="label">Full Name</label>
+                            <input type="text" id="vcard-name" class="input" placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="vcard-phone" class="label">Phone</label>
+                            <input type="tel" id="vcard-phone" class="input" placeholder="+1234567890">
+                        </div>
+                        <div class="form-group">
+                            <label for="vcard-email" class="label">Email</label>
+                            <input type="email" id="vcard-email" class="input" placeholder="john@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="vcard-org" class="label">Organization (Optional)</label>
+                            <input type="text" id="vcard-org" class="input" placeholder="Company Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="vcard-url" class="label">Website (Optional)</label>
+                            <input type="url" id="vcard-url" class="input" placeholder="https://example.com">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="options-grid">

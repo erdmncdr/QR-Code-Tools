@@ -12,7 +12,9 @@ const state = {
     currentTheme: 'light',
     activeStream: null,
     scanning: false,
-    lastResult: null
+    lastResult: null,
+    currentTemplate: 'text',
+    qrHistory: []
 };
 
 // ===========================
@@ -32,6 +34,7 @@ const elements = {
     readerContent: document.getElementById('reader-content'),
 
     // Generator
+    qrTemplate: document.getElementById('qr-template'),
     qrInput: document.getElementById('qr-input'),
     qrSize: document.getElementById('qr-size'),
     qrColor: document.getElementById('qr-color'),
@@ -290,11 +293,126 @@ const tabs = {
 };
 
 // ===========================
+// Template Handler
+// ===========================
+const templates = {
+    switch(templateType) {
+        // Hide all templates
+        document.querySelectorAll('.template-form').forEach(form => {
+            form.classList.add('hidden');
+        });
+
+        // Show selected template
+        const selectedTemplate = document.getElementById(`${templateType}-template`);
+        if (selectedTemplate) {
+            selectedTemplate.classList.remove('hidden');
+        }
+
+        state.currentTemplate = templateType;
+    },
+
+    buildContent(templateType) {
+        switch (templateType) {
+            case 'text':
+                return elements.qrInput.value.trim();
+
+            case 'wifi': {
+                const ssid = document.getElementById('wifi-ssid').value.trim();
+                const password = document.getElementById('wifi-password').value;
+                const encryption = document.getElementById('wifi-encryption').value;
+                if (!ssid) return '';
+                return `WIFI:T:${encryption};S:${ssid};P:${password};;`;
+            }
+
+            case 'email': {
+                const email = document.getElementById('email-address').value.trim();
+                const subject = document.getElementById('email-subject').value;
+                const body = document.getElementById('email-body').value;
+                if (!email) return '';
+                let mailto = `mailto:${email}`;
+                const params = [];
+                if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+                if (body) params.push(`body=${encodeURIComponent(body)}`);
+                if (params.length > 0) mailto += '?' + params.join('&');
+                return mailto;
+            }
+
+            case 'sms': {
+                const number = document.getElementById('sms-number').value.trim();
+                const message = document.getElementById('sms-message').value;
+                if (!number) return '';
+                return `smsto:${number}:${message}`;
+            }
+
+            case 'tel': {
+                const number = document.getElementById('tel-number').value.trim();
+                if (!number) return '';
+                return `tel:${number}`;
+            }
+
+            case 'vcard': {
+                const name = document.getElementById('vcard-name').value.trim();
+                const phone = document.getElementById('vcard-phone').value;
+                const email = document.getElementById('vcard-email').value;
+                const org = document.getElementById('vcard-org').value;
+                const url = document.getElementById('vcard-url').value;
+
+                if (!name) return '';
+
+                let vcard = 'BEGIN:VCARD\nVERSION:3.0\n';
+                vcard += `FN:${name}\n`;
+                if (phone) vcard += `TEL:${phone}\n`;
+                if (email) vcard += `EMAIL:${email}\n`;
+                if (org) vcard += `ORG:${org}\n`;
+                if (url) vcard += `URL:${url}\n`;
+                vcard += 'END:VCARD';
+                return vcard;
+            }
+
+            default:
+                return '';
+        }
+    }
+};
+
+// ===========================
+// QR History
+// ===========================
+const history = {
+    load() {
+        const saved = localStorage.getItem('qr-history');
+        if (saved) {
+            try {
+                state.qrHistory = JSON.parse(saved);
+            } catch (e) {
+                state.qrHistory = [];
+            }
+        }
+    },
+
+    save(data, template) {
+        const entry = {
+            data: data,
+            template: template,
+            timestamp: Date.now(),
+            date: new Date().toLocaleString()
+        };
+
+        state.qrHistory.unshift(entry);
+        if (state.qrHistory.length > 20) {
+            state.qrHistory = state.qrHistory.slice(0, 20);
+        }
+
+        localStorage.setItem('qr-history', JSON.stringify(state.qrHistory));
+    }
+};
+
+// ===========================
 // QR Code Generator
 // ===========================
 const generator = {
     async generate() {
-        const text = elements.qrInput.value.trim();
+        const text = templates.buildContent(state.currentTemplate);
         const t = translations[state.currentLanguage];
 
         if (!text) {
@@ -318,6 +436,9 @@ const generator = {
 
             elements.qrPreview.classList.remove('hidden');
             toast.show(t.qrGenerated, 'success');
+
+            // Save to history
+            history.save(text, state.currentTemplate);
         } catch (error) {
             console.error('QR Generation Error:', error);
             toast.show('Error generating QR code', 'error');
@@ -574,6 +695,11 @@ const events = {
         elements.tabGenerator.addEventListener('click', () => tabs.switchTo('generator'));
         elements.tabReader.addEventListener('click', () => tabs.switchTo('reader'));
 
+        // Template switching
+        elements.qrTemplate.addEventListener('change', (e) => {
+            templates.switch(e.target.value);
+        });
+
         // Generator
         elements.generateBtn.addEventListener('click', () => generator.generate());
         elements.qrInput.addEventListener('keypress', (e) => {
@@ -610,6 +736,9 @@ const init = () => {
     const savedLanguage = localStorage.getItem('language') || 'en';
     elements.languageSwitch.value = savedLanguage;
     language.set(savedLanguage);
+
+    // Load QR history
+    history.load();
 
     // Initialize events
     events.init();

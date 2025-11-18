@@ -453,6 +453,15 @@ textarea.input {
     box-shadow: var(--shadow-md);
 }
 
+/* Template Forms */
+.template-form {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.template-form.hidden {
+    display: none;
+}
+
 /* Options Grid */
 .options-grid {
     display: grid;
